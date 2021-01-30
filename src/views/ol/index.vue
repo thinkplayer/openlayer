@@ -35,6 +35,7 @@ export default {
           })
         ],
         view: new View({
+          // fromLonLat 将4326转成3857
           center: fromLonLat([113.658097, 34.745795]),
           zoom: 12
         })
