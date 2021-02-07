@@ -1,76 +1,101 @@
 <template>
   <div class="app-container">
-    <el-input v-model="filterText" placeholder="Filter keyword" style="margin-bottom:30px;" />
+
+    <el-radio-group v-model="radio" @change="handleSingChoose">
+      <el-radio-button :label="0">全部</el-radio-button>
+      <el-radio-button :label="1">在线</el-radio-button>
+      <el-radio-button :label="2">离线</el-radio-button>
+    </el-radio-group>
 
     <el-tree
       ref="tree2"
-      :data="data2"
+      :data="curData"
+      :default-expanded-keys="expandedList"
+      node-key="nodeName"
+      @node-expand="nodeExpand"
+      @node-collapse="nodeCollapse"
       :props="defaultProps"
-      :filter-node-method="filterNode"
       class="filter-tree"
-      default-expand-all
-    />
+      @node-click="hanldeClickNode"
+    >
+      <span slot-scope="{ node, data }" class="custom-tree-node">
+        <span>{{ data.nodeName }}</span>
+        <span v-if="data.type === 'device' && data.status == 1">(在线)</span>
+        <span v-if="data.type === 'device' && data.status != 1">(离线)</span>
+      </span>
+    </el-tree>
 
   </div>
 </template>
 
 <script>
+import treeData from '@/assets/data/tree.json'
+import lodash from 'lodash'
+
+function filterTreeOn(arr, status) {
+  const a = arr.map(item => {
+    if (item.children) {
+      item.children = item.children.filter(item0 => {
+        if (item0.type !== 'device') {
+          return true
+        } else {
+          if (status === 'on' ? (item0.status != 1) : (item0.status == 1)) {
+            return false
+          } else {
+            return true
+          }
+        }
+      })
+      filterTreeOn(item.children, status)
+    }
+    return item
+  })
+  return a
+}
+
 export default {
 
   data() {
     return {
-      filterText: '',
-      data2: [{
-        id: 1,
-        label: 'Level one 1',
-        children: [{
-          id: 4,
-          label: 'Level two 1-1',
-          children: [{
-            id: 9,
-            label: 'Level three 1-1-1'
-          }, {
-            id: 10,
-            label: 'Level three 1-1-2'
-          }]
-        }]
-      }, {
-        id: 2,
-        label: 'Level one 2',
-        children: [{
-          id: 5,
-          label: 'Level two 2-1'
-        }, {
-          id: 6,
-          label: 'Level two 2-2'
-        }]
-      }, {
-        id: 3,
-        label: 'Level one 3',
-        children: [{
-          id: 7,
-          label: 'Level two 3-1'
-        }, {
-          id: 8,
-          label: 'Level two 3-2'
-        }]
-      }],
+      allData: [],
+      onData: [],
+      offData: [],
+      curData: [],
+      expandedList: [],
       defaultProps: {
         children: 'children',
-        label: 'label'
-      }
+        label: 'nodeName'
+      },
+      radio: 0
     }
   },
+  created() {
+    this.curData = this.allData = treeData
+  },
+  computed: {},
   watch: {
-    filterText(val) {
-      this.$refs.tree2.filter(val)
+    expandedList(v) {
+      console.log('%c🌼(v)🚭', 'font-size:20px;border:3px inset #42b983', v)
     }
   },
-
   methods: {
-    filterNode(value, data) {
-      if (!value) return true
-      return data.label.indexOf(value) !== -1
+    handleSingChoose(e) {
+      if (e === 1) { // 在线
+        this.curData = this.onData = filterTreeOn(lodash.cloneDeep(this.allData), 'on')
+      } else if (e === 2) {
+        this.curData = this.offData = filterTreeOn(lodash.cloneDeep(this.allData), 'off')
+      } else {
+        this.curData = this.allData
+      }
+    },
+    hanldeClickNode(e) {
+      console.log('%c🌼(e)🚭', 'font-size:20px;border:3px inset #42b983', e)
+    },
+    nodeExpand(data) {
+      this.expandedList.push(data.nodeName)
+    },
+    nodeCollapse(data) {
+      this.expandedList.splice(this.expandedList.indexOf(data.nodeName), 1)
     }
   }
 }
